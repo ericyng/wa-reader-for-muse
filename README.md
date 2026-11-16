@@ -2,7 +2,7 @@
 
 <img src="docs/images/icon.png" width="120" alt="WA Reader for Muse icon — the Muse moose inside the WhatsApp speech bubble">
 
-A native macOS menubar app that exports WhatsApp messages from the Mac's local WhatsApp database into the JSONL feeds that Muse's scheduled checks read — the family group updates (3 & Me, Hermanas) and Evie's Stratford school groups.
+A native macOS menubar app that exports WhatsApp messages from the Mac's local WhatsApp database into the JSONL feeds that Muse's scheduled checks read — group chats, school groups, etc.
 
 It replaced the `wa-reader` command-line exporter and the `wa-health` watchdog (both LaunchAgents) on November 16, 2026, after a macOS upgrade froze the old pipeline for a day. The app writes **the same files, in the same place, in the same formats**, so every downstream check kept working through the cutover without changes.
 
