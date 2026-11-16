@@ -1,0 +1,161 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+  :root{
+    --ink:#1d1d1f; --sub:#6e6e73; --line:#d9d9de; --card:#ffffff;
+    --green:#28c840; --amber:#e8a13a; --red:#ff5f57; --yellow:#febc2e;
+    --blue:#0a84ff; --wa:#25d366; --bg:#f2f2f5; --panel:#f6f6f8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1060px;margin:0 auto;padding:36px 22px 70px}
+  h1{font-size:28px;margin:0 0 6px}
+  .lede{color:var(--sub);font-size:15px;line-height:1.55;max-width:760px;margin:0 0 8px}
+  h2{font-size:20px;margin:42px 0 4px}
+  .cap{color:var(--sub);font-size:13.5px;line-height:1.5;max-width:760px;margin:0 0 16px}
+  .row{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start}
+  /* ---------- mac window chrome ---------- */
+  .win{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    box-shadow:0 12px 34px rgba(0,0,0,.13);overflow:hidden}
+  .titlebar{display:flex;align-items:center;gap:8px;padding:10px 14px;
+    background:linear-gradient(#fbfbfc,#f1f1f4);border-bottom:1px solid var(--line)}
+  .tl{width:12px;height:12px;border-radius:50%}
+  .tl.r{background:var(--red)} .tl.y{background:var(--yellow)} .tl.g{background:var(--green)}
+  .titlebar .t{font-size:13px;font-weight:600;color:#3a3a3c;margin-left:6px}
+  .titlebar .sp{flex:1}
+  /* ---------- menubar ---------- */
+  .menubar{background:rgba(250,250,252,.92);border:1px solid var(--line);border-radius:10px;
+    display:flex;align-items:center;gap:16px;padding:6px 14px;font-size:13px;
+    box-shadow:0 4px 14px rgba(0,0,0,.07)}
+  .menubar .apple{font-size:15px}
+  .menubar .appname{font-weight:700}
+  .menubar .grow{flex:1}
+  .mb-icons{display:flex;align-items:center;gap:14px;color:#3a3a3c}
+  .wa-ico{display:inline-flex;align-items:center;gap:5px;padding:2px 7px;border-radius:6px}
+  .wa-ico.active{background:#e3e3e8}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .dot.green{background:var(--green)} .dot.amber{background:var(--amber)}
+  .dot.red{background:var(--red)} .dot.grey{background:#b9b9bf}
+  /* ---------- dropdown ---------- */
+  .dropdown{width:340px;background:rgba(252,252,254,.97);border:1px solid var(--line);
+    border-radius:12px;box-shadow:0 14px 38px rgba(0,0,0,.18);padding:8px;font-size:13px}
+  .dd-head{padding:8px 10px 6px}
+  .dd-head .big{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .dd-head .small{color:var(--sub);margin-top:3px;line-height:1.45}
+  .dd-sep{height:1px;background:var(--line);margin:6px 4px}
+  .dd-item{display:flex;align-items:center;gap:9px;padding:6px 10px;border-radius:7px}
+  .dd-item:hover{background:#f0f0f3}
+  .dd-item .k{flex:1}
+  .dd-item .v{color:var(--sub)}
+  .dd-item.disabled{color:#a7a7ad}
+  .kbd{color:var(--sub);font-size:12px}
+  /* ---------- generic ui bits ---------- */
+  .btn{display:inline-block;border:1px solid var(--line);background:#fff;border-radius:8px;
+    padding:6px 14px;font-size:13px;font-weight:600;cursor:default}
+  .btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+  .btn.wa{background:var(--wa);border-color:var(--wa);color:#07351a}
+  .switch{width:38px;height:23px;border-radius:12px;background:#d7d7dc;position:relative;flex:none}
+  .switch::after{content:"";position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+  .switch.on{background:var(--green)}
+  .switch.on::after{left:17px}
+  .badge{font-size:10.5px;font-weight:700;letter-spacing:.02em;padding:2px 7px;border-radius:20px;
+    background:#e8f6ec;color:#157347;border:1px solid #bfe6cc}
+  .badge.greyb{background:#f0f0f3;color:var(--sub);border-color:var(--line)}
+  .search{display:flex;align-items:center;gap:7px;background:#eeeef1;border-radius:8px;
+    padding:6px 10px;color:var(--sub);font-size:13px}
+  /* ---------- onboarding ---------- */
+  .onboard{width:520px}
+  .ob-body{padding:22px 26px 24px}
+  .ob-status{display:flex;gap:14px;align-items:flex-start;background:#fdf3f2;border:1px solid #f3cfcc;
+    border-radius:10px;padding:14px 16px;margin-bottom:16px}
+  .ob-status.ok{background:#eefaf0;border-color:#c4e8cd}
+  .ob-status .ic{font-size:22px;line-height:1}
+  .ob-status .h{font-weight:700;font-size:14.5px}
+  .ob-status .p{color:#5c5c60;font-size:13px;line-height:1.5;margin-top:2px}
+  .steps{margin:0 0 18px;padding:0;list-style:none;counter-reset:st}
+  .steps li{display:flex;gap:11px;padding:7px 0;font-size:13.5px;line-height:1.5;color:#2c2c2e}
+  .steps li::before{counter-increment:st;content:counter(st);flex:none;width:21px;height:21px;
+    border-radius:50%;background:var(--blue);color:#fff;font-size:12px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;margin-top:1px}
+  .ob-actions{display:flex;gap:10px;align-items:center}
+  .ob-note{color:var(--sub);font-size:12px;margin-top:14px;line-height:1.5}
+  .spin{color:var(--sub);font-size:12.5px}
+  /* ---------- picker ---------- */
+  .picker{width:640px}
+  .pk-body{display:flex;min-height:430px}
+  .pk-side{width:168px;background:var(--panel);border-right:1px solid var(--line);padding:14px 10px;flex:none}
+  .pk-side .it{display:flex;gap:8px;align-items:center;padding:6px 9px;border-radius:8px;font-size:13px;margin-bottom:2px}
+  .pk-side .it.sel{background:#e4e4ea;font-weight:600}
+  .pk-main{flex:1;padding:16px 18px}
+  .master{display:flex;gap:12px;align-items:flex-start;background:#f4fbf5;border:1px solid #cfe9d4;
+    border-radius:10px;padding:12px 14px;margin:12px 0 16px}
+  .master .h{font-weight:700;font-size:13.5px}
+  .master .p{color:#5c5c60;font-size:12.5px;line-height:1.5;margin-top:2px}
+  .sect{font-size:11.5px;font-weight:700;letter-spacing:.06em;color:var(--sub);
+    text-transform:uppercase;margin:16px 0 6px}
+  .trow{display:flex;align-items:center;gap:11px;padding:8px 6px;border-bottom:1px solid #efeff2}
+  .trow:last-child{border-bottom:none}
+  .avatar{width:30px;height:30px;border-radius:50%;background:#dfe7df;color:#33603c;flex:none;
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+  .avatar.p{background:#e2e4f2;color:#3c4470}
+  .trow .nm{font-size:13.5px;font-weight:600}
+  .trow .meta{color:var(--sub);font-size:12px;margin-top:1px}
+  .trow .grow{flex:1}
+  .warn{color:var(--amber);font-size:12px;font-weight:600}
+  /* ---------- settings ---------- */
+  .setrow{display:flex;align-items:center;gap:12px;padding:11px 2px;border-bottom:1px solid #efeff2;font-size:13.5px}
+  .setrow:last-child{border-bottom:none}
+  .setrow .grow{flex:1}
+  .setrow .sub{color:var(--sub);font-size:12.5px;margin-top:1px;line-height:1.45}
+  .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:12.5px}
+  .seg span{padding:5px 11px;background:#fff}
+  .seg span.sel{background:#e8e8ed;font-weight:700}
+  .path{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#f2f2f5;
+    border:1px solid var(--line);border-radius:6px;padding:3px 8px;color:#3a3a3c}
+  /* ---------- flows ---------- */
+  .flow{display:flex;flex-direction:column;gap:0;margin:6px 0 8px}
+  .fstep{display:flex;gap:13px;align-items:flex-start}
+  .fbox{flex:1;background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:11px 15px;font-size:13.5px;line-height:1.5}
+  .fbox .fh{font-weight:700}
+  .fbox .fp{color:#55555a}
+  .fbox.decision{border-color:#f0d9a8;background:#fffaf0}
+  .fbox.good{border-color:#bfe6cc;background:#f4fbf5}
+  .fbox.bad{border-color:#f3cfcc;background:#fdf3f2}
+  .fnum{flex:none;width:24px;height:24px;border-radius:50%;background:#1d1d1f;color:#fff;
+    font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:9px}
+  .farrow{align-self:flex-start;margin:3px 0 3px 11px;color:#9a9aa0;font-size:15px;line-height:1}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 26px}
+  @media (max-width:760px){.fgrid{grid-template-columns:1fr}}
+  .foot{color:var(--sub);font-size:12.5px;margin-top:44px;line-height:1.6}
+
+  body{background:#ececf0;padding:28px}
+  .tabbar{display:flex;justify-content:center;gap:3px;padding:9px 10px 0}
+  .tab{font-size:12.5px;padding:5px 14px;border-radius:7px;color:#3a3a3c;display:flex;gap:6px;align-items:center}
+  .tab.sel{background:#e2e2e8;font-weight:600}
+  .sectnote{font-weight:400;text-transform:none;letter-spacing:0;color:var(--sub);font-size:11.5px}
+  .dim{opacity:.45}
+  .formsec{font-size:12px;font-weight:700;color:var(--sub);margin:16px 0 2px;text-transform:uppercase;letter-spacing:.05em}
+  .shotwin{width:680px}
+  .logbox{background:#0f0f12;color:#c9f2cd;border-radius:8px;padding:10px 12px;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;line-height:1.65}
+</style>
+</head><body>
+<div class="win shotwin" id="shot">
+  <div class="titlebar"><span class="tl r"></span><span class="tl y"></span><span class="tl g"></span><span class="t">WA Reader for Muse</span></div>
+  <div class="tabbar"><span class="tab">&#128172; Threads</span><span class="tab">&#128339; Schedule</span><span class="tab sel">&#129658; Health &amp; log</span><span class="tab">&#8505;&#65038; About</span></div>
+  <div style="padding:2px 18px 16px">
+    <div class="setrow"><div class="grow">Feed status<div class="sub">Healthy — written to health.json every minute, same format as the old watchdog.</div></div><span class="badge">OK</span></div>
+    <div class="setrow"><div class="grow">Last export</div><span class="v" style="color:var(--sub)">today 2:43 PM — 5 new messages</span></div>
+    <div class="setrow"><div class="grow">Newest exported message</div><span class="v" style="color:var(--sub)">today 2:41 PM</span></div>
+    <div class="setrow"><div class="grow">WhatsApp database<div class="sub">Fingerprint matches the last run — no rebuild detected.</div></div><span class="v" style="color:var(--sub)">16,549 msgs</span></div>
+    <div class="setrow"><div class="grow">Full Disk Access</div><span class="badge">GRANTED</span></div>
+    <div class="logbox" style="margin-top:12px">
+      14:43:02 export ok — 2 group message(s), 3 all-chat message(s)<br>
+      14:43:02 health: ok<br>
+      14:13:11 export ok — 0 new<br>
+      13:56:40 database fingerprint ok (max pk 16549)
+    </div>
+  </div>
+</div>
+</body></html>

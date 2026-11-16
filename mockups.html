@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WA Reader for Muse — UI Mockups &amp; Flows</title>
+<style>
+  :root{
+    --ink:#1d1d1f; --sub:#6e6e73; --line:#d9d9de; --card:#ffffff;
+    --green:#28c840; --amber:#e8a13a; --red:#ff5f57; --yellow:#febc2e;
+    --blue:#0a84ff; --wa:#25d366; --bg:#f2f2f5; --panel:#f6f6f8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1060px;margin:0 auto;padding:36px 22px 70px}
+  h1{font-size:28px;margin:0 0 6px}
+  .lede{color:var(--sub);font-size:15px;line-height:1.55;max-width:760px;margin:0 0 8px}
+  h2{font-size:20px;margin:42px 0 4px}
+  .cap{color:var(--sub);font-size:13.5px;line-height:1.5;max-width:760px;margin:0 0 16px}
+  .row{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start}
+  /* ---------- mac window chrome ---------- */
+  .win{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    box-shadow:0 12px 34px rgba(0,0,0,.13);overflow:hidden}
+  .titlebar{display:flex;align-items:center;gap:8px;padding:10px 14px;
+    background:linear-gradient(#fbfbfc,#f1f1f4);border-bottom:1px solid var(--line)}
+  .tl{width:12px;height:12px;border-radius:50%}
+  .tl.r{background:var(--red)} .tl.y{background:var(--yellow)} .tl.g{background:var(--green)}
+  .titlebar .t{font-size:13px;font-weight:600;color:#3a3a3c;margin-left:6px}
+  .titlebar .sp{flex:1}
+  /* ---------- menubar ---------- */
+  .menubar{background:rgba(250,250,252,.92);border:1px solid var(--line);border-radius:10px;
+    display:flex;align-items:center;gap:16px;padding:6px 14px;font-size:13px;
+    box-shadow:0 4px 14px rgba(0,0,0,.07)}
+  .menubar .apple{font-size:15px}
+  .menubar .appname{font-weight:700}
+  .menubar .grow{flex:1}
+  .mb-icons{display:flex;align-items:center;gap:14px;color:#3a3a3c}
+  .wa-ico{display:inline-flex;align-items:center;gap:5px;padding:2px 7px;border-radius:6px}
+  .wa-ico.active{background:#e3e3e8}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .dot.green{background:var(--green)} .dot.amber{background:var(--amber)}
+  .dot.red{background:var(--red)} .dot.grey{background:#b9b9bf}
+  /* ---------- dropdown ---------- */
+  .dropdown{width:340px;background:rgba(252,252,254,.97);border:1px solid var(--line);
+    border-radius:12px;box-shadow:0 14px 38px rgba(0,0,0,.18);padding:8px;font-size:13px}
+  .dd-head{padding:8px 10px 6px}
+  .dd-head .big{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .dd-head .small{color:var(--sub);margin-top:3px;line-height:1.45}
+  .dd-sep{height:1px;background:var(--line);margin:6px 4px}
+  .dd-item{display:flex;align-items:center;gap:9px;padding:6px 10px;border-radius:7px}
+  .dd-item:hover{background:#f0f0f3}
+  .dd-item .k{flex:1}
+  .dd-item .v{color:var(--sub)}
+  .dd-item.disabled{color:#a7a7ad}
+  .kbd{color:var(--sub);font-size:12px}
+  /* ---------- generic ui bits ---------- */
+  .btn{display:inline-block;border:1px solid var(--line);background:#fff;border-radius:8px;
+    padding:6px 14px;font-size:13px;font-weight:600;cursor:default}
+  .btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+  .btn.wa{background:var(--wa);border-color:var(--wa);color:#07351a}
+  .switch{width:38px;height:23px;border-radius:12px;background:#d7d7dc;position:relative;flex:none}
+  .switch::after{content:"";position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+  .switch.on{background:var(--green)}
+  .switch.on::after{left:17px}
+  .badge{font-size:10.5px;font-weight:700;letter-spacing:.02em;padding:2px 7px;border-radius:20px;
+    background:#e8f6ec;color:#157347;border:1px solid #bfe6cc}
+  .badge.greyb{background:#f0f0f3;color:var(--sub);border-color:var(--line)}
+  .search{display:flex;align-items:center;gap:7px;background:#eeeef1;border-radius:8px;
+    padding:6px 10px;color:var(--sub);font-size:13px}
+  /* ---------- onboarding ---------- */
+  .onboard{width:520px}
+  .ob-body{padding:22px 26px 24px}
+  .ob-status{display:flex;gap:14px;align-items:flex-start;background:#fdf3f2;border:1px solid #f3cfcc;
+    border-radius:10px;padding:14px 16px;margin-bottom:16px}
+  .ob-status.ok{background:#eefaf0;border-color:#c4e8cd}
+  .ob-status .ic{font-size:22px;line-height:1}
+  .ob-status .h{font-weight:700;font-size:14.5px}
+  .ob-status .p{color:#5c5c60;font-size:13px;line-height:1.5;margin-top:2px}
+  .steps{margin:0 0 18px;padding:0;list-style:none;counter-reset:st}
+  .steps li{display:flex;gap:11px;padding:7px 0;font-size:13.5px;line-height:1.5;color:#2c2c2e}
+  .steps li::before{counter-increment:st;content:counter(st);flex:none;width:21px;height:21px;
+    border-radius:50%;background:var(--blue);color:#fff;font-size:12px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;margin-top:1px}
+  .ob-actions{display:flex;gap:10px;align-items:center}
+  .ob-note{color:var(--sub);font-size:12px;margin-top:14px;line-height:1.5}
+  .spin{color:var(--sub);font-size:12.5px}
+  /* ---------- picker ---------- */
+  .picker{width:640px}
+  .pk-body{display:flex;min-height:430px}
+  .pk-side{width:168px;background:var(--panel);border-right:1px solid var(--line);padding:14px 10px;flex:none}
+  .pk-side .it{display:flex;gap:8px;align-items:center;padding:6px 9px;border-radius:8px;font-size:13px;margin-bottom:2px}
+  .pk-side .it.sel{background:#e4e4ea;font-weight:600}
+  .pk-main{flex:1;padding:16px 18px}
+  .master{display:flex;gap:12px;align-items:flex-start;background:#f4fbf5;border:1px solid #cfe9d4;
+    border-radius:10px;padding:12px 14px;margin:12px 0 16px}
+  .master .h{font-weight:700;font-size:13.5px}
+  .master .p{color:#5c5c60;font-size:12.5px;line-height:1.5;margin-top:2px}
+  .sect{font-size:11.5px;font-weight:700;letter-spacing:.06em;color:var(--sub);
+    text-transform:uppercase;margin:16px 0 6px}
+  .trow{display:flex;align-items:center;gap:11px;padding:8px 6px;border-bottom:1px solid #efeff2}
+  .trow:last-child{border-bottom:none}
+  .avatar{width:30px;height:30px;border-radius:50%;background:#dfe7df;color:#33603c;flex:none;
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+  .avatar.p{background:#e2e4f2;color:#3c4470}
+  .trow .nm{font-size:13.5px;font-weight:600}
+  .trow .meta{color:var(--sub);font-size:12px;margin-top:1px}
+  .trow .grow{flex:1}
+  .warn{color:var(--amber);font-size:12px;font-weight:600}
+  /* ---------- settings ---------- */
+  .setrow{display:flex;align-items:center;gap:12px;padding:11px 2px;border-bottom:1px solid #efeff2;font-size:13.5px}
+  .setrow:last-child{border-bottom:none}
+  .setrow .grow{flex:1}
+  .setrow .sub{color:var(--sub);font-size:12.5px;margin-top:1px;line-height:1.45}
+  .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:12.5px}
+  .seg span{padding:5px 11px;background:#fff}
+  .seg span.sel{background:#e8e8ed;font-weight:700}
+  .path{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#f2f2f5;
+    border:1px solid var(--line);border-radius:6px;padding:3px 8px;color:#3a3a3c}
+  /* ---------- flows ---------- */
+  .flow{display:flex;flex-direction:column;gap:0;margin:6px 0 8px}
+  .fstep{display:flex;gap:13px;align-items:flex-start}
+  .fbox{flex:1;background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:11px 15px;font-size:13.5px;line-height:1.5}
+  .fbox .fh{font-weight:700}
+  .fbox .fp{color:#55555a}
+  .fbox.decision{border-color:#f0d9a8;background:#fffaf0}
+  .fbox.good{border-color:#bfe6cc;background:#f4fbf5}
+  .fbox.bad{border-color:#f3cfcc;background:#fdf3f2}
+  .fnum{flex:none;width:24px;height:24px;border-radius:50%;background:#1d1d1f;color:#fff;
+    font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:9px}
+  .farrow{align-self:flex-start;margin:3px 0 3px 11px;color:#9a9aa0;font-size:15px;line-height:1}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 26px}
+  @media (max-width:760px){.fgrid{grid-template-columns:1fr}}
+  .foot{color:var(--sub);font-size:12.5px;margin-top:44px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>WA Reader for Muse — UI mockups &amp; flows</h1>
+<p class="lede">Draft visuals for the menubar app from the Nov 16 design doc. These are static mockups to iterate on — layout, wording, and states — not screenshots of a built app. Names, threads, and times are drawn from the real feed so it reads true to life.</p>
+
+<h2>1 · Menubar presence</h2>
+<p class="cap">The app lives in the menubar. The speech-bubble icon carries a status dot: green = feed fresh, amber = recoverable problem (e.g. WhatsApp closed), red = blocked (Full Disk Access missing or exports failing), grey = paused. The dropdown is the whole day-to-day UI.</p>
+
+<div class="menubar">
+  <span class="apple"></span><span class="appname">WA Reader for Muse</span><span>File</span><span>Edit</span><span>View</span>
+  <span class="grow"></span>
+  <span class="mb-icons">
+    <span class="wa-ico active">💬<span class="dot green"></span></span>
+    <span>🔋</span><span>📶</span><span>🔍</span>
+    <span>Mon Nov 16&nbsp; 9:41 AM</span>
+  </span>
+</div>
+
+<div class="row" style="margin-top:22px">
+  <div>
+    <div class="dropdown">
+      <div class="dd-head">
+        <div class="big"><span class="dot green"></span> Feed healthy</div>
+        <div class="small">Last export 9:26 AM · newest message 8:27 AM<br>112 chats · 4 monitored threads</div>
+      </div>
+      <div class="dd-sep"></div>
+      <div class="dd-item"><span class="k">Run export now</span><span class="kbd">⌘R</span></div>
+      <div class="dd-item"><span class="k">Open WhatsApp</span></div>
+      <div class="dd-sep"></div>
+      <div class="dd-item"><span class="k">Choose threads…</span><span class="v">4 on</span></div>
+      <div class="dd-item"><span class="k">Schedule</span><span class="v">every 30 min</span></div>
+      <div class="dd-item"><span class="k">Auto-open WhatsApp if closed</span><span class="v">On</span></div>
+      <div class="dd-sep"></div>
+      <div class="dd-item"><span class="k">View log</span></div>
+      <div class="dd-item"><span class="k">Open data folder</span></div>
+      <div class="dd-sep"></div>
+      <div class="dd-item"><span class="k">Quit WA Reader for Muse</span><span class="kbd">⌘Q</span></div>
+    </div>
+    <p class="cap" style="margin-top:10px">Healthy state — the 99% case. Two lines of status, everything else one click away.</p>
+  </div>
+
+  <div>
+    <div class="dropdown">
+      <div class="dd-head">
+        <div class="big"><span class="dot red"></span> Needs Full Disk Access</div>
+        <div class="small">Exports are paused. Last successful export was Sunday 1:13 PM — the feed is <b>stale</b>, not quiet.</div>
+      </div>
+      <div class="dd-sep"></div>
+      <div class="dd-item"><span class="k"><b>Open System Settings…</b></span></div>
+      <div class="dd-item"><span class="k">Show setup guide</span></div>
+      <div class="dd-sep"></div>
+      <div class="dd-item disabled"><span class="k">Run export now</span><span class="v">blocked</span></div>
+      <div class="dd-item"><span class="k">Open WhatsApp</span><span class="v">running</span></div>
+      <div class="dd-sep"></div>
+      <div class="dd-item"><span class="k">Choose threads…</span><span class="v">4 on</span></div>
+      <div class="dd-item"><span class="k">View log</span></div>
+      <div class="dd-sep"></div>
+      <div class="dd-item"><span class="k">Quit WA Reader for Muse</span><span class="kbd">⌘Q</span></div>
+    </div>
+    <p class="cap" style="margin-top:10px">Blocked state — the failure we lived through Nov 15–16, except here it's visible in one glance and the fix is the first item.</p>
+  </div>
+</div>
+
+<h2>2 · First-run: Full Disk Access onboarding</h2>
+<p class="cap">macOS gives apps no way to <i>request</i> Full Disk Access with a prompt — the user has to add the app in System Settings. So the app tests access live (by trying to read WhatsApp's database), deep-links to the exact Settings pane, and detects the grant the moment it lands. No restart, no guesswork.</p>
+
+<div class="row">
+  <div class="win onboard">
+    <div class="titlebar"><span class="tl r"></span><span class="tl y"></span><span class="tl g"></span><span class="t">Welcome to WA Reader for Muse</span></div>
+    <div class="ob-body">
+      <div class="ob-status">
+        <div class="ic">🔒</div>
+        <div>
+          <div class="h">Full Disk Access needed</div>
+          <div class="p">WA Reader for Muse reads WhatsApp's message database on this Mac. macOS protects that file, so the app needs Full Disk Access. Nothing is exported until you grant it.</div>
+        </div>
+      </div>
+      <ol class="steps">
+        <li><span>Click <b>Open System Settings</b> — it takes you to Privacy &amp; Security → Full Disk Access.</span></li>
+        <li><span>Find <b>WA Reader for Muse</b> in the list and switch it on. (If it's not listed, click <b>+</b> and pick WA Reader for Muse from Applications.)</span></li>
+        <li><span>Come back here — this window notices on its own, usually within a few seconds.</span></li>
+      </ol>
+      <div class="ob-actions">
+        <span class="btn primary">Open System Settings</span>
+        <span class="btn">Reveal app in Finder</span>
+        <span class="spin">⟳ Checking access…</span>
+      </div>
+      <p class="ob-note">Why a settings trip? Apple doesn't let apps ask for Full Disk Access with a pop-up — any app that needs it has to send you to Settings. WA Reader for Muse only ever reads WhatsApp's database, and only the threads you choose.</p>
+    </div>
+  </div>
+
+  <div class="win onboard" style="width:400px">
+    <div class="titlebar"><span class="tl r"></span><span class="tl y"></span><span class="tl g"></span><span class="t">Welcome to WA Reader for Muse</span></div>
+    <div class="ob-body">
+      <div class="ob-status ok">
+        <div class="ic">✅</div>
+        <div>
+          <div class="h">Access granted</div>
+          <div class="p">WA Reader for Muse can read WhatsApp's database. Because the app is properly signed, this grant survives updates and macOS upgrades — you shouldn't have to do this again.</div>
+        </div>
+      </div>
+      <p style="font-size:13.5px;line-height:1.55;margin:0 0 16px">Next: pick which threads to export. Your current setup is imported automatically — the two Stratford groups and the all-chats feed — so you can just confirm it.</p>
+      <div class="ob-actions">
+        <span class="btn primary">Choose threads…</span>
+        <span class="btn">Use current setup</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2>3 · Thread picker</h2>
+<p class="cap">The settings window's main pane. Every WhatsApp chat and group, searchable, with an export switch per thread — the fix for today's hardcoded group list compiled into a binary. The <b>monitored feed</b> is what the school checks read; the <b>all-chats feed</b> (master switch, top) is what the family/dad checks read. A thread can be in either or both, exactly as today.</p>
+
+<div class="win picker">
+  <div class="titlebar"><span class="tl r"></span><span class="tl y"></span><span class="tl g"></span><span class="t">WA Reader for Muse Settings</span><span class="sp"></span><span class="search" style="width:210px">🔍 <span>Search threads</span></span></div>
+  <div class="pk-body">
+    <div class="pk-side">
+      <div class="it sel">💬 Threads</div>
+      <div class="it">🕐 Schedule</div>
+      <div class="it">🩺 Health &amp; log</div>
+      <div class="it">ℹ️ About</div>
+    </div>
+    <div class="pk-main">
+      <div class="master">
+        <div style="flex:1">
+          <div class="h">Export all chats</div>
+          <div class="p">Every thread's text goes to the all-chats feed — this is what the family updates (3 &amp; Me, Hermanas) are read from. Turn off to export only the threads switched on below.</div>
+        </div>
+        <div class="switch on"></div>
+      </div>
+
+      <div class="sect">Groups</div>
+      <div class="trow">
+        <div class="avatar">3</div>
+        <div class="grow"><div class="nm">3 &amp; Me</div><div class="meta">Last exported today 8:27 AM · in all-chats feed</div></div>
+        <span class="badge">ALL-CHATS</span><div class="switch on"></div>
+      </div>
+      <div class="trow">
+        <div class="avatar">H</div>
+        <div class="grow"><div class="nm">Hermanas 😬</div><div class="meta">Last exported today 8:27 AM · in all-chats feed</div></div>
+        <span class="badge">ALL-CHATS</span><div class="switch on"></div>
+      </div>
+      <div class="trow">
+        <div class="avatar">S</div>
+        <div class="grow"><div class="nm">Stratford LG Room 20 (G1)</div><div class="meta">Last exported Thu Nov 12, 4:23 PM · monitored feed</div></div>
+        <span class="badge">MONITORED</span><div class="switch on"></div>
+      </div>
+      <div class="trow">
+        <div class="avatar">1</div>
+        <div class="grow"><div class="nm">1st Grade Village | 26-27</div><div class="meta">Last exported Thu Nov 12, 12:07 PM · monitored feed</div></div>
+        <span class="badge">MONITORED</span><div class="switch on"></div>
+      </div>
+      <div class="trow">
+        <div class="avatar">W</div>
+        <div class="grow"><div class="nm">Willow Glen Neighbors</div><div class="meta">Not exported · 214 messages</div></div>
+        <span class="badge greyb">OFF</span><div class="switch"></div>
+      </div>
+
+      <div class="sect">People</div>
+      <div class="trow">
+        <div class="avatar p">L</div>
+        <div class="grow"><div class="nm">Lisa Ng</div><div class="meta">In all-chats feed via master switch</div></div>
+        <span class="badge">ALL-CHATS</span><div class="switch"></div>
+      </div>
+      <div class="trow">
+        <div class="avatar p">T</div>
+        <div class="grow"><div class="nm">Tiffany Ng</div><div class="meta">In all-chats feed via master switch</div></div>
+        <span class="badge">ALL-CHATS</span><div class="switch"></div>
+      </div>
+      <div class="trow">
+        <div class="avatar p">?</div>
+        <div class="grow"><div class="nm">+1 (408) 555-0119</div><div class="meta"><span class="warn">⚠ No longer in WhatsApp's database</span> · last seen Oct 30</div></div>
+        <span class="badge greyb">GONE</span><div class="switch"></div>
+      </div>
+
+      <p class="cap" style="margin:14px 0 0">Changes apply on the next export run — no rebuild, no reinstall, no permission redo. Threads that disappear from WhatsApp stay listed (marked gone) so an export never stops silently.</p>
+    </div>
+  </div>
+</div>
+
+<h2>4 · Schedule &amp; health panes</h2>
+<p class="cap">The remaining settings: how often exports run, the watchdog behaviors carried over from wa-health, and a plain-language health pane with the log — the same information M reads over SSH today, visible locally.</p>
+
+<div class="row">
+  <div class="win" style="width:470px">
+    <div class="titlebar"><span class="tl r"></span><span class="tl y"></span><span class="tl g"></span><span class="t">Schedule</span></div>
+    <div style="padding:8px 18px 14px">
+      <div class="setrow"><div class="grow">Export every<div class="sub">Also runs on launch, on demand, and shortly after WhatsApp's database changes.</div></div>
+        <div class="seg"><span>5 min</span><span class="sel">30 min</span><span>1 hr</span><span>2 hr</span></div></div>
+      <div class="setrow"><div class="grow">Start at login<div class="sub">Replaces the current LaunchAgents.</div></div><div class="switch on"></div></div>
+      <div class="setrow"><div class="grow">Auto-open WhatsApp if closed<div class="sub">At most once per 30 minutes. WhatsApp must be running for the feed to stay fresh.</div></div><div class="switch on"></div></div>
+      <div class="setrow"><div class="grow">Show in Dock</div><div class="switch"></div></div>
+      <div class="setrow"><div class="grow">Data folder<div class="sub">Same files, same place as today — existing checks keep working.</div></div><span class="path">~/.local/share/wa-reader/</span></div>
+    </div>
+  </div>
+
+  <div class="win" style="width:470px">
+    <div class="titlebar"><span class="tl r"></span><span class="tl y"></span><span class="tl g"></span><span class="t">Health &amp; log</span></div>
+    <div style="padding:8px 18px 14px">
+      <div class="setrow"><div class="grow">Feed status<div class="sub">Healthy · written to health.json for M's checks, same format as today.</div></div><span class="badge">OK</span></div>
+      <div class="setrow"><div class="grow">Newest exported message</div><span class="v" style="color:var(--sub)">today 8:27 AM</span></div>
+      <div class="setrow"><div class="grow">WhatsApp database<div class="sub">Fingerprint matches the last run — no rebuild detected.</div></div><span class="v" style="color:var(--sub)">16,530 msgs</span></div>
+      <div class="setrow"><div class="grow">Full Disk Access</div><span class="badge">GRANTED</span></div>
+      <div style="background:#0f0f12;color:#c9f2cd;border-radius:8px;padding:10px 12px;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;line-height:1.65;margin-top:10px">
+        09:26:59 export ok — 20 group, 10,794 all-chat<br>
+        09:26:41 database fingerprint ok (max pk 16534)<br>
+        09:13:31 export ok — 0 new<br>
+        08:56:12 WhatsApp database changed — debounced run queued
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2>5 · Flows</h2>
+<p class="cap">The four flows that matter: first run, a normal export cycle, the self-healing path for the failure that bit us on Nov 16, and migration from the current setup.</p>
+
+<h3 style="font-size:16px;margin:22px 0 8px">Flow A — First run</h3>
+<div class="flow">
+  <div class="fstep"><div class="fnum">1</div><div class="fbox"><span class="fh">App launches</span> <span class="fp">(login item). It tests Full Disk Access by trying to read WhatsApp's database — the only honest test.</span></div></div>
+  <div class="farrow">↓</div>
+  <div class="fstep"><div class="fnum">2</div><div class="fbox decision"><span class="fh">Access granted?</span> <span class="fp">If not, the onboarding window (§2) opens with the Settings deep-link. The app re-tests every few seconds; the menubar icon stays red meanwhile.</span></div></div>
+  <div class="farrow">↓</div>
+  <div class="fstep"><div class="fnum">3</div><div class="fbox"><span class="fh">Import current setup.</span> <span class="fp">The two Stratford groups and the all-chats setting are pre-loaded from today's config — the picker opens as a confirmation, not a blank slate.</span></div></div>
+  <div class="farrow">↓</div>
+  <div class="fstep"><div class="fnum">4</div><div class="fbox good"><span class="fh">First export runs.</span> <span class="fp">Status flips to "Feed healthy," and the app settles into the menubar. Total hands-on time: one Settings switch.</span></div></div>
+</div>
+
+<h3 style="font-size:16px;margin:26px 0 8px">Flow B — A normal export cycle</h3>
+<div class="flow">
+  <div class="fstep"><div class="fnum">1</div><div class="fbox"><span class="fh">Trigger.</span> <span class="fp">Timer (30 min), a debounced file-system event when WhatsApp's database changes, launch, or "Run export now."</span></div></div>
+  <div class="farrow">↓</div>
+  <div class="fstep"><div class="fnum">2</div><div class="fbox"><span class="fh">Pre-flight.</span> <span class="fp">Is WhatsApp running? (If not and auto-open is on: open it, ≤ once per 30 min.) Is FDA still granted? Fingerprint the database (see Flow C).</span></div></div>
+  <div class="farrow">↓</div>
+  <div class="fstep"><div class="fnum">3</div><div class="fbox"><span class="fh">Copy, then read the copy.</span> <span class="fp">ChatStorage.sqlite + WAL copied to a private temp dir <i>with a timeout</i> — a stuck copy is abandoned and reported, never left hanging. Only the copy is opened, read-only.</span></div></div>
+  <div class="farrow">↓</div>
+  <div class="fstep"><div class="fnum">4</div><div class="fbox"><span class="fh">Export incrementally.</span> <span class="fp">New text messages since each thread's watermark are appended to outbox.jsonl / all-messages.jsonl in today's exact formats; watermarks advance only after the write succeeds.</span></div></div>
+  <div class="farrow">↓</div>
+  <div class="fstep"><div class="fnum">5</div><div class="fbox good"><span class="fh">Publish status.</span> <span class="fp">status.json + health.json rewritten; menubar state updated. M's checks read these exactly as they do today.</span></div></div>
+</div>
+
+<h3 style="font-size:16px;margin:26px 0 8px">Flow C — WhatsApp rebuilds its database (the Nov 16 failure, self-healed)</h3>
+<div class="flow">
+  <div class="fstep"><div class="fnum">1</div><div class="fbox bad"><span class="fh">What happened on Nov 16:</span> <span class="fp">a macOS upgrade made WhatsApp rebuild its database; message numbering restarted, so the reader's saved position (17,816) sat above the new maximum (16,534). A healthy reader exported nothing, indefinitely. Fixed by hand that morning.</span></div></div>
+  <div class="farrow">↓</div>
+  <div class="fstep"><div class="fnum">2</div><div class="fbox decision"><span class="fh">Detection, every run:</span> <span class="fp">compare stored watermarks against the live database — if any watermark exceeds the current maximum message number, or the database fingerprint (creation date, message count) changed, treat it as a rebuild.</span></div></div>
+  <div class="farrow">↓</div>
+  <div class="fstep"><div class="fnum">3</div><div class="fbox"><span class="fh">Reset by date, not by number.</span> <span class="fp">Watermarks fall back to the newest date already in each output file, and the app re-exports from there. Downstream checks filter by date, so re-exported messages are harmless duplicates — nothing is ever skipped.</span></div></div>
+  <div class="farrow">↓</div>
+  <div class="fstep"><div class="fnum">4</div><div class="fbox good"><span class="fh">Log it in plain words:</span> <span class="fp">"WhatsApp database rebuilt — export position reset, 227 messages re-exported." Visible in the Health pane and health.json, so the next occurrence is a log line, not an outage.</span></div></div>
+</div>
+
+<h3 style="font-size:16px;margin:26px 0 8px">Flow D — Migration from the current setup</h3>
+<div class="fgrid">
+  <div class="flow">
+    <div class="fstep"><div class="fnum">1</div><div class="fbox"><span class="fh">Install alongside.</span> <span class="fp">The app is built, signed, and installed on m4m. The CLI reader keeps running — nothing changes yet.</span></div></div>
+    <div class="farrow">↓</div>
+    <div class="fstep"><div class="fnum">2</div><div class="fbox"><span class="fh">Grant FDA to the app</span> <span class="fp">(Flow A). The CLI binary's grant is left untouched as a fallback.</span></div></div>
+    <div class="farrow">↓</div>
+    <div class="fstep"><div class="fnum">3</div><div class="fbox"><span class="fh">Parallel run.</span> <span class="fp">App and CLI both export for one cycle; M diffs the outputs over SSH.</span></div></div>
+  </div>
+  <div class="flow">
+    <div class="fstep"><div class="fnum">4</div><div class="fbox"><span class="fh">Cut over.</span> <span class="fp">Disable the wa-reader and wa-health LaunchAgents; the app takes over exports + health. wa-serve keeps serving the same files — consumers never notice.</span></div></div>
+    <div class="farrow">↓</div>
+    <div class="fstep"><div class="fnum">5</div><div class="fbox good"><span class="fh">Rollback is one step:</span> <span class="fp">re-enable the two LaunchAgents. The old binary, its state files, and its FDA grant stay on disk, untouched, until the app has run clean for a few weeks.</span></div></div>
+  </div>
+</div>
+
+<p class="foot">WA Reader for Muse mockups v1 — Nov 16, 2026. Companion to DESIGN.md. Open points from the design doc still stand: (1) all-chats default on vs selected-only, (2) identical output files (recommended), (3) app name, (4) menubar-only vs Dock icon. Reply with changes — wording, layout, missing states — and I'll revise before any code is written.</p>
+
+</div>
+</body>
+</html>
