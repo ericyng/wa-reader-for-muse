@@ -530,6 +530,7 @@ struct HealthPane: View {
                 }
                 .font(.callout)
             }
+            failureHistory
             Text("Recent log").font(.subheadline).fontWeight(.semibold)
             ScrollView {
                 Text(recentLogLines(14).joined(separator: "\n"))
@@ -542,6 +543,59 @@ struct HealthPane: View {
             .cornerRadius(8)
         }
         .padding(16)
+    }
+
+    /// Structured failure history from failures.jsonl: counts, the current
+    /// failure run if one is open, and the most recent events. This is the
+    /// troubleshooting view — app.log below it is the narrative.
+    private var failureHistory: some View {
+        let summary = FailureLog.summary()
+        let consecutive = FailureLog.consecutiveExportFailures()
+        let events = FailureLog.recentEvents(5)
+        return VStack(alignment: .leading, spacing: 6) {
+            Text("Failure history").font(.subheadline).fontWeight(.semibold)
+            Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 5) {
+                GridRow {
+                    Text("Failed attempts (24 h)").foregroundStyle(.secondary)
+                    Text("\(summary.day)")
+                }
+                GridRow {
+                    Text("Failed attempts (7 d)").foregroundStyle(.secondary)
+                    Text("\(summary.week)")
+                }
+                if consecutive > 0 {
+                    GridRow {
+                        Text("Export failing now").foregroundStyle(.secondary)
+                        Text("\(consecutive) attempt(s) in a row").foregroundStyle(.red)
+                    }
+                }
+                if let last = summary.last {
+                    GridRow {
+                        Text("Last failure").foregroundStyle(.secondary)
+                        Text("\(last.at) — \(last.stage ?? last.kind): \(last.error ?? "")")
+                            .lineLimit(2)
+                    }
+                }
+            }
+            .font(.callout)
+            if events.isEmpty {
+                Text("No failures recorded yet.").font(.callout).foregroundStyle(.secondary)
+            } else {
+                Text(events.map(failureLine).joined(separator: "\n"))
+                    .font(.system(size: 11, design: .monospaced))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .textSelection(.enabled)
+            }
+        }
+    }
+
+    private func failureLine(_ e: FailureEvent) -> String {
+        if e.event == "recovered" {
+            let suffix = e.afterFailures.map { " after \($0) failed attempt(s)" } ?? ""
+            return "\(e.at)  \(e.kind) recovered\(suffix)"
+        }
+        let consec = e.consecutive.map { " (#\($0) in a row)" } ?? ""
+        return "\(e.at)  \(e.kind) FAILED [\(e.stage ?? "?")] \(e.error ?? "")\(consec)"
     }
 }
 

@@ -23,6 +23,8 @@ enum Paths {
     static var engineStateURL: URL { shareDir.appendingPathComponent("engine-state.json") }
     static var healthStateURL: URL { shareDir.appendingPathComponent("wa-health-state.json") }
     static var logURL: URL { shareDir.appendingPathComponent("app.log") }
+    static var failuresURL: URL { shareDir.appendingPathComponent("failures.jsonl") }
+    static var failureStateURL: URL { shareDir.appendingPathComponent("failure-state.json") }
 
     static var whatsappDB: URL {
         home.appendingPathComponent("Library/Group Containers/group.net.whatsapp.WhatsApp.shared/ChatStorage.sqlite")
@@ -76,6 +78,155 @@ func appLog(_ message: String) {
 func recentLogLines(_ count: Int) -> [String] {
     guard let text = try? String(contentsOf: Paths.logURL, encoding: .utf8) else { return [] }
     return Array(text.split(separator: "\n").suffix(count)).map(String.init)
+}
+
+// MARK: - Failure tracking (failures.jsonl beside the feed files)
+//
+// app.log is a running narrative; this is the structured counterpart for
+// troubleshooting: every failed export attempt is recorded with its stage
+// and error, health checks are recorded on TRANSITION only (ok→stale and
+// stale→ok, so a long stale stretch is two entries, not hundreds), and a
+// recovery entry closes the arc when exports succeed again. The file is
+// trimmed to the most recent ~1000 events so it stays small forever.
+
+struct FailureEvent: Codable {
+    var at: String              // ISO timestamp
+    var kind: String            // "export" | "health"
+    var event: String           // "failure" | "recovered"
+    var stage: String? = nil    // export stage, or "health_check"
+    var error: String? = nil    // error text, or comma-joined stale reasons
+    var consecutive: Int? = nil // failure events: run length including this one
+    var afterFailures: Int? = nil // recovered events: failures it took to get here
+}
+
+enum FailureLog {
+    private struct State: Codable {
+        var consecutiveExport: Int = 0
+        var healthWasOK: Bool? = nil
+    }
+
+    private static let lock = NSLock()
+
+    private static func loadState() -> State {
+        if let data = try? Data(contentsOf: Paths.failureStateURL),
+           let s = try? JSONDecoder().decode(State.self, from: data) { return s }
+        return State()
+    }
+
+    private static func saveState(_ s: State) {
+        // The data dir may not exist yet on the very first failure of a
+        // fresh install — create it, or the counter silently never persists.
+        try? FileManager.default.createDirectory(at: Paths.shareDir, withIntermediateDirectories: true)
+        if let data = try? JSONEncoder().encode(s) {
+            try? data.write(to: Paths.failureStateURL, options: [.atomic])
+        }
+    }
+
+    private static func append(_ e: FailureEvent) {
+        guard let data = try? JSONEncoder().encode(e),
+              var line = String(data: data, encoding: .utf8) else { return }
+        line += "\n"
+        let url = Paths.failuresURL
+        try? FileManager.default.createDirectory(at: Paths.shareDir, withIntermediateDirectories: true)
+        guard let blob = line.data(using: .utf8) else { return }
+        if FileManager.default.fileExists(atPath: url.path),
+           let handle = try? FileHandle(forWritingTo: url) {
+            handle.seekToEndOfFile()
+            handle.write(blob)
+            try? handle.close()
+        } else {
+            try? blob.write(to: url, options: [.atomic])
+        }
+        trimIfNeeded()
+    }
+
+    private static func trimIfNeeded() {
+        let url = Paths.failuresURL
+        guard let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
+              let size = attrs[.size] as? Int, size > 256 * 1024,
+              let text = try? String(contentsOf: url, encoding: .utf8) else { return }
+        let lines = text.split(separator: "\n").suffix(1000)
+        try? (lines.joined(separator: "\n") + "\n").write(to: url, atomically: true, encoding: .utf8)
+    }
+
+    /// Record one failed export attempt. Bumps the consecutive counter that
+    /// the eventual recovery entry reports against.
+    static func recordExportFailure(stage: String, error: String) {
+        lock.lock(); defer { lock.unlock() }
+        var st = loadState()
+        st.consecutiveExport += 1
+        saveState(st)
+        append(FailureEvent(at: isoString(Date()), kind: "export", event: "failure",
+                            stage: stage, error: error, consecutive: st.consecutiveExport))
+    }
+
+    /// On a successful export, close out any open failure run with a
+    /// recovery entry. Silent when there was nothing to recover from.
+    static func recordExportSuccess() {
+        lock.lock(); defer { lock.unlock() }
+        var st = loadState()
+        guard st.consecutiveExport > 0 else { return }
+        let n = st.consecutiveExport
+        st.consecutiveExport = 0
+        saveState(st)
+        append(FailureEvent(at: isoString(Date()), kind: "export", event: "recovered",
+                            afterFailures: n))
+        appLog("export recovered after \(n) failed attempt(s)")
+    }
+
+    /// Record health transitions only: the first stale check of a stretch
+    /// and the first healthy check after it. Called on every check; the
+    /// persisted previous verdict decides whether anything is written.
+    static func noteHealth(ok: Bool, reasons: [String]) {
+        lock.lock(); defer { lock.unlock() }
+        var st = loadState()
+        let was = st.healthWasOK
+        st.healthWasOK = ok
+        saveState(st)
+        guard let was = was, was != ok else { return }
+        if ok {
+            append(FailureEvent(at: isoString(Date()), kind: "health", event: "recovered",
+                                stage: "health_check"))
+            appLog("health recovered (was stale)")
+        } else {
+            append(FailureEvent(at: isoString(Date()), kind: "health", event: "failure",
+                                stage: "health_check", error: reasons.joined(separator: ",")))
+        }
+    }
+
+    static func consecutiveExportFailures() -> Int {
+        lock.lock(); defer { lock.unlock() }
+        return loadState().consecutiveExport
+    }
+
+    static func recentEvents(_ count: Int) -> [FailureEvent] {
+        guard let text = try? String(contentsOf: Paths.failuresURL, encoding: .utf8) else { return [] }
+        let dec = JSONDecoder()
+        return text.split(separator: "\n").suffix(count).compactMap { line in
+            line.data(using: .utf8).flatMap { try? dec.decode(FailureEvent.self, from: $0) }
+        }
+    }
+
+    /// (failures in last 24h, failures in last 7d, last failure event)
+    static func summary() -> (day: Int, week: Int, last: FailureEvent?) {
+        guard let text = try? String(contentsOf: Paths.failuresURL, encoding: .utf8) else { return (0, 0, nil) }
+        let dec = JSONDecoder()
+        let events = text.split(separator: "\n").compactMap { line in
+            line.data(using: .utf8).flatMap { try? dec.decode(FailureEvent.self, from: $0) }
+        }
+        let now = Date()
+        var day = 0, week = 0
+        var last: FailureEvent? = nil
+        for e in events where e.event == "failure" {
+            last = e
+            if let d = isoDate(e.at) {
+                let age = now.timeIntervalSince(d)
+                if age < 24 * 3600 { day += 1 }
+                if age < 7 * 24 * 3600 { week += 1 }
+            }
+        }
+        return (day, week, last)
+    }
 }
 
 // MARK: - Config (config.json in the data dir)

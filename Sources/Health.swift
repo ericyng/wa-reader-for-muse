@@ -168,6 +168,7 @@ enum Health {
             try? data.write(to: Paths.healthURL, options: [.atomic])
         }
         appLog("health: \(report.ok ? "ok" : "STALE " + reasons.joined(separator: ","))\(attempted ? " (auto-open attempted)" : "")")
+        FailureLog.noteHealth(ok: report.ok, reasons: reasons)
         return report
     }
 }

@@ -236,6 +236,15 @@ final class Engine {
         }
     }
 
+    /// Single exit path for a failed export: status file, log line, and a
+    /// structured entry in failures.jsonl (see FailureLog in Models.swift).
+    private func failExport(_ result: ExportResult, stage: String) -> ExportResult {
+        writeStatus(result)
+        appLog("export failed: \(result.error ?? "unknown error")")
+        FailureLog.recordExportFailure(stage: stage, error: result.error ?? "unknown error")
+        return result
+    }
+
     // MARK: - The export run
 
     func runExport() -> ExportResult {
@@ -244,24 +253,18 @@ final class Engine {
 
         guard Paths.findDB() != nil else {
             result.error = "ChatStorage.sqlite not found in any WhatsApp group container"
-            writeStatus(result)
-            appLog("export failed: \(result.error!)")
-            return result
+            return failExport(result, stage: "find_database")
         }
         guard let db = openDatabaseCopy() else {
             result.error = "could not copy/open database (Full Disk Access? or copy timed out)"
-            writeStatus(result)
-            appLog("export failed: \(result.error!)")
-            return result
+            return failExport(result, stage: "copy_open_database")
         }
         defer { sqlite3_close(db) }
 
         let msgCols = columnNames(db: db, table: "ZWAMESSAGE")
         guard msgCols.contains("ZTEXT"), msgCols.contains("ZMESSAGEDATE"), msgCols.contains("ZCHATSESSION") else {
             result.error = "ZWAMESSAGE schema not recognised (missing ZTEXT/ZMESSAGEDATE/ZCHATSESSION)"
-            writeStatus(result)
-            appLog("export failed: \(result.error!)")
-            return result
+            return failExport(result, stage: "schema_check")
         }
 
         // Sender expression (same best-effort logic as v2).
@@ -453,6 +456,7 @@ final class Engine {
         result.ok = true
         writeStatus(result)
         appLog("export ok — \(result.groupNew) group message(s), \(result.allNew) all-chat message(s)")
+        FailureLog.recordExportSuccess()
         return result
     }
 

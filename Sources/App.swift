@@ -81,6 +81,11 @@ enum CLI {
 
 @MainActor
 final class AppState: ObservableObject {
+    /// Lets the app delegate kick off the engine at launch (see below).
+    static weak var shared: AppState?
+
+    init() { AppState.shared = self }
+
     @Published var config: AppConfig = AppConfig.load() {
         didSet {
             config.save()
@@ -269,6 +274,17 @@ final class AppState: ObservableObject {
 /// Reopen handling for full-app (Dock) mode: clicking the Dock icon with no
 /// visible window brings the main window back.
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// Start the engine at launch, not only when a view first appears.
+    /// A login-item or state-restored launch may never show a window, and
+    /// without this the reader would sit in the menubar doing nothing —
+    /// a silent dead feed, the exact failure this app exists to prevent.
+    /// start() is idempotent; the views' onAppear calls stay as backstops.
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            Task { @MainActor in AppState.shared?.start() }
+        }
+    }
+
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         if !flag {
             sender.windows.first { $0.title == "WA Reader for Muse" }?.makeKeyAndOrderFront(nil)
