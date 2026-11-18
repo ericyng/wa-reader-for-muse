@@ -25,9 +25,19 @@ enum Paths {
     static var logURL: URL { shareDir.appendingPathComponent("app.log") }
     static var failuresURL: URL { shareDir.appendingPathComponent("failures.jsonl") }
     static var failureStateURL: URL { shareDir.appendingPathComponent("failure-state.json") }
+    static var probesURL: URL { shareDir.appendingPathComponent("probes.jsonl") }
+    static var probeStateURL: URL { shareDir.appendingPathComponent("probe-state.json") }
 
     static var whatsappDB: URL {
         home.appendingPathComponent("Library/Group Containers/group.net.whatsapp.WhatsApp.shared/ChatStorage.sqlite")
+    }
+
+    static var whatsappContainer: URL {
+        home.appendingPathComponent("Library/Group Containers/group.net.whatsapp.WhatsApp.shared")
+    }
+
+    static var whatsappLogsDir: URL {
+        whatsappContainer.appendingPathComponent("Logs/WhatsApp_2")
     }
 
     static let dbCandidates = [
@@ -226,6 +236,128 @@ enum FailureLog {
             }
         }
         return (day, week, last)
+    }
+}
+
+// MARK: - Probe (probes.jsonl beside the feed files)
+//
+// A probe is the forensic snapshot Health.check collects on every run:
+// file metadata for WhatsApp's stores, its own log, its last server
+// ping ack, and its process. health.json embeds the latest probe;
+// probes.jsonl keeps one line per health TRANSITION (ok→stale and
+// stale→ok) so a stale stretch can be diagnosed after the fact —
+// "wedged vs quiet night" was indistinguishable before this existed
+// (2026-11-18). Timestamps and pattern names only: no log content, no
+// message content, no names are ever recorded here.
+
+struct ProbeData: Codable {
+    var chatstorage_at: String? = nil
+    var chatstorage_age_s: Int? = nil
+    var chatstorage_size: Int? = nil
+    var chatstorage_wal_at: String? = nil
+    var chatstorage_wal_age_s: Int? = nil
+    var chatstorage_wal_size: Int? = nil
+    var axolotl_wal_at: String? = nil
+    var axolotl_wal_age_s: Int? = nil
+    var axolotl_wal_size: Int? = nil
+    var localkeyvalue_wal_at: String? = nil
+    var localkeyvalue_wal_age_s: Int? = nil
+    var localkeyvalue_wal_size: Int? = nil
+    var container_newest_wal_at: String? = nil
+    var container_newest_wal_age_s: Int? = nil
+    var container_newest_wal_name: String? = nil
+    var whatsapp_log_at: String? = nil
+    var whatsapp_log_age_s: Int? = nil
+    var whatsapp_log_name: String? = nil
+    var server_ping_ack_found: Bool = false
+    var server_ping_ack_at: String? = nil
+    var server_ping_ack_age_s: Int? = nil
+    var whatsapp_pid: Int? = nil
+    var whatsapp_age_s: Int? = nil
+    /// Set only when ChatStorage passed the stale threshold but the
+    /// probe showed WhatsApp alive-and-connected (quiet, not wedged).
+    var db_quiet_s: Int? = nil
+    /// "healthy" | "quiet" | "stale" — mirrors the health verdict.
+    var classification: String = "healthy"
+}
+
+struct ProbeSnapshot: Codable {
+    var at: String
+    var ok: Bool
+    var stale: Bool
+    var reasons: [String]
+    var probe: ProbeData
+}
+
+enum ProbeLog {
+    private struct State: Codable {
+        var healthWasOK: Bool? = nil
+    }
+
+    private static let lock = NSLock()
+
+    private static func loadState() -> State {
+        if let data = try? Data(contentsOf: Paths.probeStateURL),
+           let s = try? JSONDecoder().decode(State.self, from: data) { return s }
+        return State()
+    }
+
+    private static func saveState(_ s: State) {
+        try? FileManager.default.createDirectory(at: Paths.shareDir, withIntermediateDirectories: true)
+        if let data = try? JSONEncoder().encode(s) {
+            try? data.write(to: Paths.probeStateURL, options: [.atomic])
+        }
+    }
+
+    private static func append(_ snap: ProbeSnapshot) {
+        guard let data = try? JSONEncoder().encode(snap),
+              var line = String(data: data, encoding: .utf8) else { return }
+        line += "\n"
+        let url = Paths.probesURL
+        try? FileManager.default.createDirectory(at: Paths.shareDir, withIntermediateDirectories: true)
+        guard let blob = line.data(using: .utf8) else { return }
+        if FileManager.default.fileExists(atPath: url.path),
+           let handle = try? FileHandle(forWritingTo: url) {
+            handle.seekToEndOfFile()
+            handle.write(blob)
+            try? handle.close()
+        } else {
+            try? blob.write(to: url, options: [.atomic])
+        }
+        trimIfNeeded()
+    }
+
+    private static func trimIfNeeded() {
+        let url = Paths.probesURL
+        guard let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
+              let size = attrs[.size] as? Int, size > 256 * 1024,
+              let text = try? String(contentsOf: url, encoding: .utf8) else { return }
+        let lines = text.split(separator: "\n").suffix(1000)
+        try? (lines.joined(separator: "\n") + "\n").write(to: url, atomically: true, encoding: .utf8)
+    }
+
+    /// Snapshot on health transitions only: the first stale check of a
+    /// stretch and the first healthy check after it. Called on every
+    /// check; the persisted previous verdict decides whether anything
+    /// is written, so a clean run writes no probe spam.
+    static func noteTransition(ok: Bool, reasons: [String], probe: ProbeData) {
+        lock.lock(); defer { lock.unlock() }
+        var st = loadState()
+        let was = st.healthWasOK
+        st.healthWasOK = ok
+        saveState(st)
+        guard let was = was, was != ok else { return }
+        append(ProbeSnapshot(at: isoString(Date()), ok: ok, stale: !ok,
+                             reasons: reasons, probe: probe))
+        appLog("probe snapshot: health \(ok ? "recovered" : "went stale") (\(reasons.joined(separator: ",")))")
+    }
+
+    static func recentSnapshots(_ count: Int) -> [ProbeSnapshot] {
+        guard let text = try? String(contentsOf: Paths.probesURL, encoding: .utf8) else { return [] }
+        let dec = JSONDecoder()
+        return text.split(separator: "\n").suffix(count).compactMap { line in
+            line.data(using: .utf8).flatMap { try? dec.decode(ProbeSnapshot.self, from: $0) }
+        }
     }
 }
 

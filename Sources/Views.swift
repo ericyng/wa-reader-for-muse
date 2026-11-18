@@ -529,6 +529,9 @@ struct HealthPane: View {
                     }
                 }
                 .font(.callout)
+                if let p = h.probe {
+                    probeSection(p)
+                }
             }
             failureHistory
             Text("Recent log").font(.subheadline).fontWeight(.semibold)
@@ -543,6 +546,79 @@ struct HealthPane: View {
             .cornerRadius(8)
         }
         .padding(16)
+    }
+
+    /// Live probe from the latest health check: whether WhatsApp itself
+    /// is alive and connected, independent of ChatStorage freshness —
+    /// this is what separates a wedged feed from a quiet night.
+    private func probeSection(_ p: ProbeData) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Probe").font(.subheadline).fontWeight(.semibold)
+            Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 5) {
+                GridRow {
+                    Text("Classification").foregroundStyle(.secondary)
+                    Text(probeClassificationText(p))
+                }
+                GridRow {
+                    Text("ChatStorage activity").foregroundStyle(.secondary)
+                    Text(ageText(p.chatstorage_wal_age_s ?? p.chatstorage_age_s))
+                }
+                GridRow {
+                    Text("Container activity").foregroundStyle(.secondary)
+                    Text(containerText(p))
+                }
+                GridRow {
+                    Text("WhatsApp log").foregroundStyle(.secondary)
+                    Text(ageText(p.whatsapp_log_age_s))
+                }
+                GridRow {
+                    Text("Last server ping ack").foregroundStyle(.secondary)
+                    Text(p.server_ping_ack_found ? ageText(p.server_ping_ack_age_s) : "not in recent log tail")
+                }
+                GridRow {
+                    Text("WhatsApp process").foregroundStyle(.secondary)
+                    Text(processText(p))
+                }
+            }
+            .font(.callout)
+        }
+    }
+
+    private func probeClassificationText(_ p: ProbeData) -> String {
+        switch p.classification {
+        case "quiet":
+            let idle = p.db_quiet_s.map { " — ChatStorage quiet for \(durationText($0))" } ?? ""
+            return "quiet (WhatsApp alive, no new messages)\(idle)"
+        case "stale":
+            return "stale"
+        default:
+            return "healthy"
+        }
+    }
+
+    private func containerText(_ p: ProbeData) -> String {
+        let age = ageText(p.container_newest_wal_age_s)
+        if let name = p.container_newest_wal_name { return "\(age) (\(name))" }
+        return age
+    }
+
+    private func processText(_ p: ProbeData) -> String {
+        guard let pid = p.whatsapp_pid else { return "not running" }
+        if let age = p.whatsapp_age_s { return "pid \(pid), up \(durationText(age))" }
+        return "pid \(pid)"
+    }
+
+    private func durationText(_ s: Int) -> String {
+        if s < 90 { return "\(s)s" }
+        if s < 5400 { return "\(s / 60)m" }
+        return "\(s / 3600)h \((s % 3600) / 60)m"
+    }
+
+    private func ageText(_ s: Int?) -> String {
+        guard let s = s else { return "—" }
+        if s < 90 { return "\(s)s ago" }
+        if s < 5400 { return "\(s / 60)m ago" }
+        return "\(s / 3600)h \((s % 3600) / 60)m ago"
     }
 
     /// Structured failure history from failures.jsonl: counts, the current
